@@ -7,8 +7,15 @@ setup_kubernetes() {
   # Setup kubectl
   cluster_url=$(jq -r '.source.cluster_url // ""' < $payload)
   if [ -z "$cluster_url" ]; then
-    echo "invalid payload (missing cluster_url)"
-    exit 1
+    if [[ -n "$KUBERNETES_SERVICE_HOST" ]]; then 
+      cluster_url="https://kubernetes"
+      if [[ $KUBERNETES_SERVICE_PORT -ne 443 ]]; then 
+        cluster_url+=":$KUBERNETES_SERVICE_PORT"
+      fi
+    else
+      echo "invalid payload (missing cluster_url)"
+      exit 1
+    fi  
   fi
   if [[ "$cluster_url" =~ https.* ]]; then
 
