@@ -28,13 +28,19 @@ setup_kubernetes() {
     mkdir -p /root/.kube
 
     ca_path="/root/.kube/ca.pem"
-    echo "$cluster_ca" | base64 -d > $ca_path
+    if [[ -z $cluster_ca && -f /var/run/secrets/kubernetes.io/serviceaccount/ca.crt ]]; then 
+      ca_path="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    else
+      echo "$cluster_ca" | base64 -d > $ca_path
+    fi
     kubectl config set-cluster default --server=$cluster_url --certificate-authority=$ca_path
 
     if [ -f "$source/$token_path" ]; then
       kubectl config set-credentials admin --token=$(cat $source/$token_path)
     elif [ ! -z "$token" ]; then
       kubectl config set-credentials admin --token=$token
+    elif [[ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]]; then
+      kubectl config set-credentials admin --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
     else
       key_path="/root/.kube/key.pem"
       cert_path="/root/.kube/cert.pem"
